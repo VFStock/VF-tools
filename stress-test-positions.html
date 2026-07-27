@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<!-- VF Stock · Библиотека стресс-тестов позиции -->
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Библиотека стресс-тестов позиции</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0F1318;
+    --panel:#171D25;
+    --panel-2:#1D242E;
+    --border:#262E38;
+    --text:#E7EAEE;
+    --text-2:#8A93A3;
+    --text-3:#5B6472;
+    --accent:#5B8DEF;
+    --accent-dim:#2E3D57;
+    --safe:#46B876;
+    --caution:#E3A83B;
+    --critical:#E0554B;
+    --safe-bg:rgba(70,184,118,0.12);
+    --caution-bg:rgba(227,168,59,0.12);
+    --critical-bg:rgba(224,85,75,0.12);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'IBM Plex Sans',sans-serif;
+    min-height:100vh;
+    transition:background .18s ease, color .18s ease;
+  }
+  .app{max-width:1180px;margin:0 auto;padding:28px 20px 60px;}
+  header.top{
+    display:flex;justify-content:space-between;align-items:flex-end;
+    border-bottom:1px solid var(--border);
+    padding-bottom:18px;margin-bottom:22px;
+    gap:16px;flex-wrap:wrap;
+  }
+  header.top .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--accent);margin-bottom:6px;
+  }
+  header.top h1{font-size:22px;font-weight:600;margin:0;letter-spacing:-.01em;}
+  header.top .sub{color:var(--text-2);font-size:13.5px;margin-top:6px;max-width:560px;line-height:1.5;}
+  header.top .counter{
+    font-family:'IBM Plex Mono',monospace;color:var(--text-3);font-size:12px;
+    white-space:nowrap;
+  }
+  body.light{
+    --bg:#F4F5F7;
+    --panel:#FFFFFF;
+    --panel-2:#F0F2F5;
+    --border:#DFE3E8;
+    --text:#1B1F27;
+    --text-2:#5B6472;
+    --text-3:#8A93A3;
+    --accent:#3F6FD1;
+    --accent-dim:#E3EAFB;
+    --safe:#2E9A5C;
+    --caution:#C4881E;
+    --critical:#C94339;
+    --safe-bg:rgba(46,154,92,0.10);
+    --caution-bg:rgba(196,136,30,0.10);
+    --critical-bg:rgba(201,67,57,0.10);
+  }
+  .toggle-row{display:flex;gap:8px;}
+  .head-controls{display:flex;flex-direction:column;align-items:flex-end;gap:10px;padding-bottom:4px;}
+  .curr-toggle{display:flex;background:var(--panel);border:1px solid var(--border);border-radius:7px;padding:3px;}
+  .curr-toggle button{
+    all:unset;font-family:'IBM Plex Mono',monospace;font-size:11.5px;padding:6px 12px;
+    border-radius:5px;cursor:pointer;color:var(--text-3);
+  }
+  .curr-toggle button.active{background:var(--accent-dim);color:var(--accent);}
+  .layout{display:grid;grid-template-columns:260px 1fr;gap:20px;align-items:start;}
+  @media (max-width:820px){.layout{grid-template-columns:1fr;}}
+
+  nav.rail{
+    background:var(--panel);border:1px solid var(--border);border-radius:10px;
+    padding:8px;position:sticky;top:20px;
+  }
+  nav.rail button{
+    all:unset;display:flex;align-items:center;gap:10px;
+    width:100%;padding:10px 10px;border-radius:7px;cursor:pointer;
+    font-size:13px;color:var(--text-2);border-left:2px solid transparent;
+    margin-bottom:2px;
+  }
+  nav.rail button:hover{background:var(--panel-2);color:var(--text);}
+  nav.rail button.active{
+    background:var(--panel-2);color:var(--text);border-left:2px solid var(--accent);
+  }
+  nav.rail .glyph{
+    width:26px;height:26px;border-radius:6px;background:var(--accent-dim);
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+    font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);font-weight:600;
+  }
+  nav.rail button.active .glyph{background:var(--accent);color:#0F1318;}
+  nav.rail .label{line-height:1.3;}
+  nav.rail .label b{display:block;font-weight:500;color:inherit;font-size:13px;}
+  nav.rail .label span{display:block;font-size:11px;color:var(--text-3);margin-top:1px;}
+
+  main.panel{
+    background:var(--panel);border:1px solid var(--border);border-radius:10px;
+    padding:26px 26px 22px;min-height:520px;
+  }
+  .mod-head{margin-bottom:18px;}
+  .mod-head .tag{
+    font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-3);
+    letter-spacing:.08em;text-transform:uppercase;
+  }
+  .mod-head h2{font-size:19px;margin:6px 0 8px;font-weight:600;}
+  .mod-head p{color:var(--text-2);font-size:13.5px;line-height:1.55;margin:0;max-width:640px;}
+
+  .grid{display:grid;grid-template-columns:1fr 260px;gap:26px;margin-top:20px;}
+  @media (max-width:700px){.grid{grid-template-columns:1fr;}}
+
+  .field{margin-bottom:16px;}
+  .field label{
+    display:flex;justify-content:space-between;align-items:baseline;
+    font-size:12.5px;color:var(--text-2);margin-bottom:6px;
+  }
+  .field label .val{font-family:'IBM Plex Mono',monospace;color:var(--text);font-size:12.5px;}
+  .field input[type=range]{
+    width:100%;-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;
+    background:var(--border);outline:none;
+  }
+  .field input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:15px;height:15px;border-radius:50%;
+    background:var(--accent);cursor:pointer;border:2px solid #0F1318;
+  }
+  .field input[type=number],
+  .field input[type=text]{
+    width:100%;background:var(--panel-2);border:1px solid var(--border);
+    color:var(--text);padding:9px 10px;border-radius:6px;font-family:'IBM Plex Mono',monospace;
+    font-size:14px;
+  }
+  .field input[type=text]:focus,
+  .field input[type=number]:focus{
+    outline:none;border-color:var(--accent);
+  }
+  .field select{
+    width:100%;background:var(--panel-2);border:1px solid var(--border);
+    color:var(--text);padding:8px 10px;border-radius:6px;font-size:13px;
+  }
+  .field.checkrow{display:flex;align-items:center;gap:10px;}
+  .field.checkrow input{width:16px;height:16px;accent-color:var(--accent);}
+  .field.checkrow label{margin:0;font-size:13px;color:var(--text);flex:1;}
+
+  .result-col{display:flex;flex-direction:column;align-items:center;}
+  .gauge-wrap{width:100%;max-width:230px;}
+  .gauge-score{
+    font-family:'IBM Plex Mono',monospace;font-size:30px;font-weight:600;
+    text-align:center;margin-top:-38px;
+  }
+  .gauge-score span{font-size:13px;color:var(--text-3);display:block;margin-top:2px;font-weight:400;}
+  .verdict{
+    margin-top:14px;width:100%;padding:10px 12px;border-radius:8px;
+    font-size:13px;text-align:center;font-weight:500;
+  }
+  .verdict.safe{background:var(--safe-bg);color:var(--safe);}
+  .verdict.caution{background:var(--caution-bg);color:var(--caution);}
+  .verdict.critical{background:var(--critical-bg);color:var(--critical);}
+
+  .detail{
+    margin-top:16px;background:var(--panel-2);border:1px solid var(--border);
+    border-radius:8px;padding:12px 14px;width:100%;font-family:'IBM Plex Mono',monospace;
+    font-size:12px;color:var(--text-2);line-height:1.8;
+  }
+  .detail div{display:flex;justify-content:space-between;gap:10px;}
+  .detail div b{color:var(--text);font-weight:500;}
+
+  .method{
+    margin-top:20px;border-top:1px solid var(--border);padding-top:14px;
+    font-size:12px;color:var(--text-3);line-height:1.6;
+  }
+  .method b{color:var(--text-2);}
+
+  footer.disclaimer{
+    margin-top:26px;font-size:11.5px;color:var(--text-3);line-height:1.6;
+    border-top:1px solid var(--border);padding-top:14px;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div>
+      <div class="eyebrow">VF Stock · Инструментарий</div>
+      <h1>Библиотека стресс-тестов позиции</h1>
+      <div class="sub">Восемь независимых проверок устойчивости отдельной бумаги. Меняйте параметры — оценка риска и вывод пересчитываются сразу.</div>
+    </div>
+    <div class="head-controls">
+      <div class="toggle-row">
+        <div class="curr-toggle" id="themeToggle">
+          <button data-theme="dark" class="active">Тёмная</button>
+          <button data-theme="light">Светлая</button>
+        </div>
+        <div class="curr-toggle" id="currToggle">
+          <button data-cur="rub" class="active">₽ РФ</button>
+          <button data-cur="usd">$ США</button>
+        </div>
+      </div>
+      <div class="counter" id="counter">01 / 08</div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <nav class="rail" id="rail"></nav>
+    <main class="panel" id="panel"></main>
+  </div>
+
+  <footer class="disclaimer">
+    Все модели упрощены и предназначены для быстрой ориентировочной оценки, а не для точного прогноза. Пороговые значения — общие ориентиры, для конкретного сектора и эмитента их стоит корректировать вручную. Это не индивидуальная инвестиционная рекомендация.
+  </footer>
+</div>
+
+<script>
+function clamp(v,min,max){return Math.max(min,Math.min(max,v));}
+function scaleScore(value, lowAt, highAt){
+  // maps value -> 0..100, where value=lowAt => 0, value=highAt => 100 (works for inverted ranges too)
+  const t = (value-lowAt)/(highAt-lowAt);
+  return clamp(t*100,0,100);
+}
+function zoneOf(score){
+  if(score<40) return 'safe';
+  if(score<70) return 'caution';
+  return 'critical';
+}
+function zoneLabel(z){
+  return z==='safe' ? 'Устойчиво' : z==='caution' ? 'Уязвимо' : 'Критично';
+}
+function fmt(n,d=1){ if(!isFinite(n)) return '—'; return n.toLocaleString('ru-RU',{minimumFractionDigits:d,maximumFractionDigits:d}); }
+
+const MODULES = [
+{
+  id:'debt', glyph:'ДН', name:'Долговая устойчивость',
+  tag:'Тест 1 · Баланс',
+  desc:'Выдержит ли эмитент рост процентных ставок без критического давления на покрытие процентов.',
+  inputs:[
+    {key:'netDebt', label:'Чистый долг', type:'number', def:120, step:1, currency:'bn'},
+    {key:'ebitda', label:'EBITDA', type:'number', def:60, step:1, currency:'bn'},
+    {key:'curRate', label:'Текущая эффективная ставка по долгу', type:'range', min:2, max:25, def:11, unit:'%'},
+    {key:'shock', label:'Шок ставки (рост)', type:'range', min:0, max:1000, def:300, unit:' б.п.'},
+    {key:'floatShare', label:'Доля долга под плавающую ставку / к рефинансированию', type:'range', min:0, max:100, def:40, unit:'%'},
+  ],
+  compute(v){
+    const ndEbitda = v.netDebt/v.ebitda;
+    const stressedRate = v.curRate + v.shock/100;
+    const floatPart = v.netDebt*v.floatShare/100;
+    const fixedPart = v.netDebt-floatPart;
+    const interest = floatPart*stressedRate/100 + fixedPart*v.curRate/100;
+    const coverage = interest>0 ? v.ebitda/interest : Infinity;
+    const sND = scaleScore(ndEbitda,1,4.5);
+    const sCov = scaleScore(6-coverage, 0, 5); // coverage 6->0, 1->100
+    const score = (sND+sCov)/2;
+    return {score, lines:[
+      ['Net Debt / EBITDA', fmt(ndEbitda,2)+'×'],
+      ['Ставка при шоке', fmt(stressedRate,1)+'%'],
+      ['Процентные расходы (стресс)', fmt(interest,1)+' '+currencySuffix('bn')],
+      ['Покрытие процентов (стресс)', isFinite(coverage)?fmt(coverage,2)+'×':'—'],
+    ]};
+  }
+},
+{
+  id:'div', glyph:'ДВ', name:'Дивидендная уязвимость',
+  tag:'Тест 2 · Денежный поток',
+  desc:'Устоит ли текущий дивиденд при падении выручки и, как следствие, свободного денежного потока.',
+  inputs:[
+    {key:'dividends', label:'Дивиденды всего', type:'number', def:20, step:0.5, currency:'bn'},
+    {key:'fcf', label:'Свободный денежный поток', type:'number', def:28, step:0.5, currency:'bn'},
+    {key:'revShock', label:'Шок падения выручки', type:'range', min:0, max:60, def:15, unit:'%'},
+    {key:'sensitivity', label:'Чувствительность FCF к выручке (операционный рычаг)', type:'range', min:0.5, max:3, def:1.5, step:0.1, unit:'×'},
+  ],
+  compute(v){
+    const fcfStressed = v.fcf*(1 - v.revShock/100*v.sensitivity);
+    const payout = fcfStressed>0 ? v.dividends/fcfStressed*100 : 999;
+    const score = fcfStressed<=0 ? 100 : scaleScore(payout,50,150);
+    return {score, lines:[
+      ['FCF после шока', fmt(fcfStressed,1)+' '+currencySuffix('bn')],
+      ['Payout ratio (стресс)', fcfStressed>0?fmt(payout,0)+'%':'FCF отрицательный'],
+      ['Текущий payout ratio', fmt(v.dividends/v.fcf*100,0)+'%'],
+    ]};
+  }
+},
+{
+  id:'fx', glyph:'ВЛ', name:'Валютный шок',
+  tag:'Тест 3 · Курс',
+  desc:'Кто выигрывает, а кто теряет от девальвации — зависит от баланса валютной выручки и валютного долга.',
+  inputs:[
+    {key:'revFx', label:'Доля валютной выручки', type:'range', min:0, max:100, def:60, unit:'%'},
+    {key:'debtFx', label:'Доля валютного долга', type:'range', min:0, max:100, def:20, unit:'%'},
+    {key:'deval', label:'Девальвация рубля', type:'range', min:0, max:50, def:20, unit:'%'},
+  ],
+  compute(v){
+    const netExposure = (v.revFx - v.debtFx)/100 * v.deval; // % points, positive = выгода
+    const score = netExposure>=0 ? scaleScore(-netExposure,0,10) : scaleScore(-netExposure,0,30);
+    return {score, lines:[
+      ['Чистая валютная экспозиция', (netExposure>=0?'+':'')+fmt(netExposure,1)+' п.п. к марже'],
+      ['Эффект', netExposure>=0?'Девальвация в плюс эмитенту':'Девальвация давит на маржу'],
+    ]};
+  }
+},
+{
+  id:'commodity', glyph:'СЫ', name:'Сырьевой шок',
+  tag:'Тест 4 · Цена сырья',
+  desc:'Насколько выручка зависит от цены на сырьё и что будет при её обвале.',
+  inputs:[
+    {key:'revShare', label:'Доля выручки, зависящая от сырья', type:'range', min:0, max:100, def:70, unit:'%'},
+    {key:'elasticity', label:'Эластичность выручки к цене сырья', type:'range', min:0.3, max:2, def:1.1, step:0.1, unit:'×'},
+    {key:'priceShock', label:'Падение цены сырья', type:'range', min:0, max:60, def:30, unit:'%'},
+  ],
+  compute(v){
+    const revenueImpact = -(v.revShare/100*v.elasticity*v.priceShock);
+    const score = scaleScore(-revenueImpact,0,35);
+    return {score, lines:[
+      ['Эффект на выручку', fmt(revenueImpact,1)+'%'],
+    ]};
+  }
+},
+{
+  id:'liq', glyph:'ЛК', name:'Ликвидность бумаги',
+  tag:'Тест 5 · Возможность выйти',
+  desc:'Сколько потребуется дней, чтобы закрыть позицию, не продавливая цену рынком.',
+  inputs:[
+    {key:'position', label:'Размер позиции', type:'number', def:5, step:0.5, currency:'mn'},
+    {key:'volume', label:'Средний дневной оборот', type:'number', def:80, step:5, currency:'mn'},
+    {key:'maxShare', label:'Макс. допустимая доля от дневного оборота', type:'range', min:2, max:30, def:10, unit:'%'},
+  ],
+  compute(v){
+    const daysToExit = v.position/(v.volume*v.maxShare/100);
+    const score = scaleScore(daysToExit,1,10);
+    return {score, lines:[
+      ['Дней на выход из позиции', fmt(daysToExit,1)],
+    ]};
+  }
+},
+{
+  id:'reg', glyph:'РГ', name:'Регуляторный / санкционный риск',
+  tag:'Тест 6 · Инфраструктура',
+  desc:'Качественная оценка риска блокировки, делистинга, ограничения выплат или иного вмешательства регулятора — применимо к любому рынку.',
+  inputs:[
+    {key:'adr', label:'Расчёты идут через иностранную инфраструктуру (депозитарные расписки, зарубежный брокер/кастодиан)', type:'checkbox', def:false, weight:20},
+    {key:'jurisdiction', label:'Юрисдикция эмитента или холдинговой структуры повышенного риска', type:'checkbox', def:false, weight:30},
+    {key:'sectorHistory', label:'В секторе уже были прецеденты блокировок, делистинга или ограничения выплат', type:'checkbox', def:true, weight:25},
+    {key:'exportDep', label:'Значимая зависимость бизнеса от недружественных/санкционных юрисдикций (сбыт, поставки, лицензии)', type:'checkbox', def:false, weight:25},
+  ],
+  compute(v, cfg){
+    let score = 0;
+    cfg.inputs.forEach(i=>{ if(v[i.key]) score += i.weight; });
+    return {score, lines:[
+      ['Сработавшие факторы', cfg.inputs.filter(i=>v[i.key]).length + ' из ' + cfg.inputs.length],
+    ]};
+  }
+},
+{
+  id:'mult', glyph:'МН', name:'Мультипликаторный сценарий',
+  tag:'Тест 7 · Переоценка',
+  desc:'Что будет с ценой, если рынок сожмёт мультипликатор до минимума, наблюдавшегося в секторе.',
+  inputs:[
+    {key:'price', label:'Текущая цена', type:'number', def:250, step:5, currency:'unit'},
+    {key:'curMult', label:'Текущий мультипликатор (P/E или EV/EBITDA)', type:'number', def:8, step:0.1},
+    {key:'minMult', label:'Исторический минимум мультипликатора по сектору', type:'number', def:4, step:0.1},
+  ],
+  compute(v){
+    const impliedPrice = v.price*(v.minMult/v.curMult);
+    const downside = (impliedPrice-v.price)/v.price*100;
+    const score = scaleScore(-downside,0,50);
+    return {score, lines:[
+      ['Цена при сжатии мультипликатора', fmt(impliedPrice,0)+' '+currencySuffix('unit')],
+      ['Потенциальный даунсайд', fmt(downside,1)+'%'],
+    ]};
+  }
+},
+{
+  id:'recession', glyph:'РЦ', name:'Рецессионный сценарий',
+  tag:'Тест 8 · Цикл',
+  desc:'Как позиция переживёт спад выручки и прибыли на фазе экономического цикла.',
+  inputs:[
+    {key:'cyc', label:'Тип бизнеса', type:'select', def:'cyclical', options:[['cyclical','Цикличный'],['defensive','Нецикличный']]},
+    {key:'revDrop', label:'Ожидаемое падение выручки в рецессию', type:'range', min:0, max:50, def:15, unit:'%'},
+    {key:'leverage', label:'Операционный рычаг (чувствительность прибыли к выручке)', type:'range', min:0.5, max:4, def:2, step:0.1, unit:'×'},
+  ],
+  compute(v){
+    const profitDrop = v.revDrop*v.leverage;
+    const bias = v.cyc==='cyclical' ? 1.1 : 0.8;
+    const adjusted = profitDrop*bias;
+    const score = scaleScore(adjusted,0,60);
+    return {score, lines:[
+      ['Ожидаемое падение прибыли', fmt(adjusted,1)+'%'],
+      ['Профиль', v.cyc==='cyclical'?'Цикличный — риск выше среднего':'Нецикличный — риск ниже среднего'],
+    ]};
+  }
+},
+];
+
+let state = {};
+MODULES.forEach(m=>{
+  state[m.id] = {};
+  m.inputs.forEach(i=>{ state[m.id][i.key] = i.def; });
+});
+let activeId = MODULES[0].id;
+let currency = 'rub'; // 'rub' | 'usd'
+
+function currSymbol(){ return currency==='rub' ? '₽' : '$'; }
+function currencySuffix(scale){
+  if(scale==='bn') return 'млрд '+currSymbol();
+  if(scale==='mn') return 'млн '+currSymbol();
+  if(scale==='unit') return currSymbol();
+  return '';
+}
+
+document.getElementById('currToggle').addEventListener('click', (e)=>{
+  const btn = e.target.closest('button');
+  if(!btn) return;
+  currency = btn.dataset.cur;
+  document.querySelectorAll('#currToggle button').forEach(b=>b.classList.toggle('active', b===btn));
+  renderPanel();
+});
+
+document.getElementById('themeToggle').addEventListener('click', (e)=>{
+  const btn = e.target.closest('button');
+  if(!btn) return;
+  document.querySelectorAll('#themeToggle button').forEach(b=>b.classList.toggle('active', b===btn));
+  document.body.classList.toggle('light', btn.dataset.theme==='light');
+});
+
+function renderRail(){
+  const rail = document.getElementById('rail');
+  rail.innerHTML = '';
+  MODULES.forEach((m,idx)=>{
+    const btn = document.createElement('button');
+    btn.className = m.id===activeId ? 'active' : '';
+    btn.innerHTML = `<span class="glyph">${m.glyph}</span><span class="label"><b>${m.name}</b><span>${m.tag}</span></span>`;
+    btn.onclick = ()=>{ activeId = m.id; renderRail(); renderPanel(); };
+    rail.appendChild(btn);
+  });
+  const idx = MODULES.findIndex(m=>m.id===activeId)+1;
+  document.getElementById('counter').textContent = String(idx).padStart(2,'0')+' / '+String(MODULES.length).padStart(2,'0');
+}
+
+function gaugeSVG(score, zoneColorVar){
+  const angle = -90 + (score/100)*180;
+  const colorMap = {safe:'var(--safe)', caution:'var(--caution)', critical:'var(--critical)'};
+  return `
+  <svg viewBox="0 0 220 130" width="100%">
+    <path d="M 20 110 A 90 90 0 0 1 84 25" fill="none" stroke="var(--safe)" stroke-width="12" stroke-linecap="round"/>
+    <path d="M 84 25 A 90 90 0 0 1 136 25" fill="none" stroke="var(--caution)" stroke-width="12" stroke-linecap="round"/>
+    <path d="M 136 25 A 90 90 0 0 1 200 110" fill="none" stroke="var(--critical)" stroke-width="12" stroke-linecap="round"/>
+    <g transform="translate(110,110) rotate(${angle})">
+      <line x1="0" y1="0" x2="0" y2="-72" stroke="${colorMap[zoneColorVar]}" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="0" cy="0" r="6" fill="${colorMap[zoneColorVar]}"/>
+    </g>
+  </svg>`;
+}
+
+let refs = {}; // live DOM refs for the current module, so typing never triggers a rebuild
+
+function fieldLabel(field){
+  if(field.currency) return field.label+', '+currencySuffix(field.currency);
+  return field.label;
+}
+
+function renderInputField(mod, field){
+  const v = state[mod.id][field.key];
+  const wrap = document.createElement('div');
+  wrap.className = field.type==='checkbox' ? 'field checkrow' : 'field';
+
+  if(field.type==='range'){
+    wrap.innerHTML = `<label>${fieldLabel(field)} <span class="val" id="val-${field.key}">${fmt(v, field.step && field.step<1 ? 1:0)}${field.unit||''}</span></label>
+      <input type="range" min="${field.min}" max="${field.max}" step="${field.step||1}" value="${v}">`;
+    wrap.querySelector('input').oninput = (e)=>{
+      const val = parseFloat(e.target.value);
+      state[mod.id][field.key] = val;
+      const lbl = document.getElementById('val-'+field.key);
+      if(lbl) lbl.textContent = fmt(val, field.step && field.step<1 ? 1:0)+(field.unit||'');
+      updateResults();
+    };
+  } else if(field.type==='number'){
+    wrap.innerHTML = `<label>${fieldLabel(field)}</label>
+      <input type="text" inputmode="decimal" autocomplete="off" value="${v}">`;
+    wrap.querySelector('input').oninput = (e)=>{
+      // accept partial input (e.g. "-", "1.", "") without touching the field's own value —
+      // only commit to state (and recompute) once it parses as a real number
+      const raw = e.target.value.replace(',', '.');
+      const val = parseFloat(raw);
+      if(!isNaN(val)){
+        state[mod.id][field.key] = val;
+        updateResults();
+      }
+    };
+  } else if(field.type==='select'){
+    wrap.innerHTML = `<label>${fieldLabel(field)}</label>
+      <select>${field.options.map(o=>`<option value="${o[0]}" ${o[0]===v?'selected':''}>${o[1]}</option>`).join('')}</select>`;
+    wrap.querySelector('select').onchange = (e)=>{
+      state[mod.id][field.key] = e.target.value;
+      updateResults();
+    };
+  } else if(field.type==='checkbox'){
+    wrap.innerHTML = `<input type="checkbox" id="chk-${field.key}" ${v?'checked':''}>
+      <label for="chk-${field.key}">${field.label}</label>`;
+    wrap.querySelector('input').onchange = (e)=>{
+      state[mod.id][field.key] = e.target.checked;
+      updateResults();
+    };
+  }
+  return wrap;
+}
+
+function updateResults(){
+  const mod = MODULES.find(m=>m.id===activeId);
+  const result = mod.compute(state[mod.id], mod);
+  const score = clamp(result.score,0,100);
+  const zone = zoneOf(score);
+
+  if(refs.gaugeWrap) refs.gaugeWrap.innerHTML = gaugeSVG(score, zone);
+  if(refs.scoreEl) refs.scoreEl.innerHTML = `${Math.round(score)}<span>индекс риска / 100</span>`;
+  if(refs.verdict){ refs.verdict.className = 'verdict '+zone; refs.verdict.textContent = zoneLabel(zone); }
+  if(refs.detail) refs.detail.innerHTML = result.lines.map(l=>`<div><span>${l[0]}</span><b>${l[1]}</b></div>`).join('');
+}
+
+function renderPanel(){
+  const mod = MODULES.find(m=>m.id===activeId);
+  const panel = document.getElementById('panel');
+  panel.innerHTML = '';
+  refs = {};
+
+  const head = document.createElement('div');
+  head.className = 'mod-head';
+  head.innerHTML = `<div class="tag">${mod.tag}</div><h2>${mod.name}</h2><p>${mod.desc}</p>`;
+  panel.appendChild(head);
+
+  const grid = document.createElement('div');
+  grid.className = 'grid';
+
+  const inputsCol = document.createElement('div');
+  mod.inputs.forEach(f=> inputsCol.appendChild(renderInputField(mod, f)) );
+
+  const resultCol = document.createElement('div');
+  resultCol.className = 'result-col';
+  const gaugeWrap = document.createElement('div');
+  gaugeWrap.className = 'gauge-wrap';
+  resultCol.appendChild(gaugeWrap);
+
+  const scoreEl = document.createElement('div');
+  scoreEl.className = 'gauge-score';
+  resultCol.appendChild(scoreEl);
+
+  const verdict = document.createElement('div');
+  verdict.className = 'verdict';
+  resultCol.appendChild(verdict);
+
+  const detail = document.createElement('div');
+  detail.className = 'detail';
+  resultCol.appendChild(detail);
+
+  refs.gaugeWrap = gaugeWrap;
+  refs.scoreEl = scoreEl;
+  refs.verdict = verdict;
+  refs.detail = detail;
+
+  grid.appendChild(inputsCol);
+  grid.appendChild(resultCol);
+  panel.appendChild(grid);
+
+  const method = document.createElement('div');
+  method.className = 'method';
+  method.innerHTML = `<b>Как читать:</b> зелёная зона — фактор не создаёт заметного риска при заданном шоке; жёлтая — уязвимость есть, стоит следить и закладывать в размер позиции; красная — шок способен существенно ухудшить положение эмитента или цену бумаги.`;
+  panel.appendChild(method);
+
+  updateResults();
+}
+
+renderRail();
+renderPanel();
+</script>
+</body>
+</html>
