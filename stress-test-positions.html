@@ -78,6 +78,12 @@
     border-radius:5px;cursor:pointer;color:var(--text-3);
   }
   .curr-toggle button.active{background:var(--accent-dim);color:var(--accent);}
+  .clear-btn{
+    all:unset;font-family:'IBM Plex Mono',monospace;font-size:11.5px;padding:9px 12px;
+    border-radius:7px;cursor:pointer;color:var(--critical);border:1px solid var(--border);
+    background:var(--panel);
+  }
+  .clear-btn:hover{background:var(--critical-bg);border-color:var(--critical);}
   .layout{display:grid;grid-template-columns:260px 1fr;gap:20px;align-items:start;}
   #accordion{display:none;}
   @media (max-width:820px){
@@ -138,6 +144,57 @@
   nav.rail .label{line-height:1.3;}
   nav.rail .label b{display:block;font-weight:500;color:inherit;font-size:13px;}
   nav.rail .label span{display:block;font-size:11px;color:var(--text-3);margin-top:1px;}
+  nav.rail .rail-section{
+    font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--text-3);padding:12px 10px 4px;
+  }
+  nav.rail .rail-section:first-child{padding-top:6px;}
+  nav.rail .summary-btn{
+    border-left:2px solid transparent;
+  }
+  nav.rail .summary-btn.active{border-left:2px solid var(--accent);}
+  nav.rail .summary-btn .glyph{background:var(--accent);color:#0F1318;}
+  nav.rail hr.rail-divider{border:none;border-top:1px solid var(--border);margin:8px 4px;}
+
+  .acc-section{
+    font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--text-3);padding:14px 4px 6px;
+  }
+  .acc-item.summary-item{border-color:var(--accent-dim);}
+  .acc-item.summary-item .acc-header .glyph{background:var(--accent);color:#0F1318;}
+
+  .bucket-row{margin-bottom:14px;}
+  .bucket-row .bucket-top{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:6px;}
+  .bucket-row .bucket-top b{color:var(--text);font-weight:500;}
+  .bucket-row .bucket-top span{font-family:'IBM Plex Mono',monospace;color:var(--text-3);}
+  .bucket-bar{height:7px;border-radius:4px;background:var(--panel-2);overflow:hidden;}
+  .bucket-bar-fill{height:100%;border-radius:4px;}
+
+  .composite-wrap{display:flex;gap:26px;align-items:center;flex-wrap:wrap;margin-bottom:26px;}
+  .composite-gauge{width:220px;flex-shrink:0;}
+  .composite-buckets{flex:1;min-width:240px;}
+
+  .test-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  .test-table th{
+    text-align:left;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--text-3);
+    text-transform:uppercase;letter-spacing:.06em;padding:6px 8px;border-bottom:1px solid var(--border);
+  }
+  .test-table td{padding:8px;border-bottom:1px solid var(--border);color:var(--text-2);}
+  .test-table td.name{color:var(--text);}
+  .test-table td.score{font-family:'IBM Plex Mono',monospace;text-align:right;color:var(--text);}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;}
+  .dot.safe{background:var(--safe);} .dot.caution{background:var(--caution);} .dot.critical{background:var(--critical);}
+  .dot.na{background:var(--text-3);}
+
+  .na-toggle{
+    display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--text-2);
+    background:var(--panel-2);border:1px solid var(--border);border-radius:8px;
+    padding:10px 12px;margin-bottom:16px;cursor:pointer;
+  }
+  .na-toggle input{width:16px;height:16px;accent-color:var(--accent);flex-shrink:0;}
+  .grid.grid-na{opacity:0.4;}
+  .grid.grid-na .field{pointer-events:none;}
+  .verdict.na{background:var(--panel-2);color:var(--text-3);}
 
   main.panel{
     background:var(--panel);border:1px solid var(--border);border-radius:10px;
@@ -227,7 +284,7 @@
     <div>
       <div class="eyebrow">VF Stock · Инструментарий</div>
       <h1>Библиотека стресс-тестов позиции</h1>
-      <div class="sub">Восемь независимых проверок устойчивости отдельной бумаги. Меняйте параметры — оценка риска и вывод пересчитываются сразу.</div>
+      <div class="sub">17 независимых проверок устойчивости отдельной бумаги, сгруппированных по темам, плюс сводный индекс. Меняйте параметры — оценка риска и вывод пересчитываются сразу.</div>
     </div>
     <div class="head-controls">
       <div class="toggle-row">
@@ -239,6 +296,7 @@
           <button data-cur="rub" class="active">₽ РФ</button>
           <button data-cur="usd">$ США</button>
         </div>
+        <button id="clearBtn" class="clear-btn" type="button">Очистить данные</button>
       </div>
       <div class="counter" id="counter">01 / 08</div>
     </div>
@@ -274,9 +332,11 @@ function zoneLabel(z){
 function fmt(n,d=1){ if(!isFinite(n)) return '—'; return n.toLocaleString('ru-RU',{minimumFractionDigits:d,maximumFractionDigits:d}); }
 
 const MODULES = [
+
+// ---- Финансовая устойчивость ----
 {
   id:'debt', glyph:'ДН', name:'Долговая устойчивость',
-  tag:'Тест 1 · Баланс',
+  category:'fin', tag:'Финансовая устойчивость',
   desc:'Выдержит ли эмитент рост процентных ставок без критического давления на покрытие процентов.',
   inputs:[
     {key:'netDebt', label:'Чистый долг', type:'number', def:120, step:1, currency:'bn'},
@@ -292,8 +352,11 @@ const MODULES = [
     const fixedPart = v.netDebt-floatPart;
     const interest = floatPart*stressedRate/100 + fixedPart*v.curRate/100;
     const coverage = interest>0 ? v.ebitda/interest : Infinity;
-    const sND = scaleScore(ndEbitda,1,4.5);
-    const sCov = scaleScore(6-coverage, 0, 5); // coverage 6->0, 1->100
+    // Критичный порог Net Debt/EBITDA зависит от рынка: РФ — от 3×, иностранные компании — от 5×
+    const critND = currency==='rub' ? 3 : 5;
+    const sND = scaleScore(ndEbitda, critND*0.35, critND);
+    // Покрытие процентов ниже 1,5× — признак высокой финансовой неустойчивости
+    const sCov = scaleScore(6-coverage, 0, 4.5);
     const score = (sND+sCov)/2;
     return {score, lines:[
       ['Net Debt / EBITDA', fmt(ndEbitda,2)+'×'],
@@ -304,8 +367,54 @@ const MODULES = [
   }
 },
 {
+  id:'refi', glyph:'РФ', name:'Риск рефинансирования долга',
+  category:'fin', tag:'Финансовая устойчивость',
+  desc:'Хватит ли эмитенту гибкости пройти через стену погашений в ближайшие годы, не попав в кассовый разрыв.',
+  inputs:[
+    {key:'debtDue', label:'Долг к погашению в ближайшие 1–3 года', type:'number', def:35, step:1, currency:'bn'},
+    {key:'totalDebt', label:'Долг всего', type:'number', def:120, step:1, currency:'bn'},
+    {key:'curRate', label:'Текущая ставка обслуживания', type:'range', min:2, max:25, def:11, unit:'%'},
+    {key:'shock', label:'Рост ставки при рефинансировании', type:'range', min:0, max:1000, def:400, unit:' б.п.'},
+    {key:'creditLines', label:'Есть свободные, неиспользованные кредитные линии', type:'checkbox', def:false},
+  ],
+  compute(v){
+    const share = v.debtDue/v.totalDebt*100;
+    const stressedRate = v.curRate + v.shock/100;
+    let score = scaleScore(share, 10, 65);
+    score += v.creditLines ? -15 : 10;
+    score = clamp(score, 0, 100);
+    return {score, lines:[
+      ['Доля долга к погашению', fmt(share,0)+'%'],
+      ['Ставка при рефинансировании', fmt(stressedRate,1)+'%'],
+      ['Кредитные линии', v.creditLines?'Есть — снижают риск':'Отсутствуют'],
+    ]};
+  }
+},
+{
+  id:'covenant', glyph:'КВ', name:'Ковенантный стресс',
+  category:'fin', tag:'Финансовая устойчивость',
+  desc:'Не приведёт ли падение EBITDA к нарушению банковских ковенантов и требованию досрочного погашения.',
+  inputs:[
+    {key:'ndEbitda', label:'Текущий Net Debt / EBITDA', type:'number', def:2.5, step:0.1},
+    {key:'limit', label:'Лимит по ковенанту (Net Debt / EBITDA)', type:'number', def:3.5, step:0.1},
+    {key:'ebitdaShock', label:'Шок падения EBITDA', type:'range', min:0, max:50, def:20, unit:'%'},
+  ],
+  compute(v){
+    const stressedRatio = v.ndEbitda/(1-v.ebitdaShock/100);
+    const utilisation = stressedRatio/v.limit*100;
+    const score = scaleScore(utilisation, 55, 115);
+    return {score, lines:[
+      ['Net Debt/EBITDA при шоке', fmt(stressedRatio,2)+'×'],
+      ['Использование лимита', fmt(utilisation,0)+'%'],
+      ['Статус', stressedRatio>=v.limit?'Риск нарушения ковенанта':'В рамках лимита'],
+    ]};
+  }
+},
+
+// ---- Денежные потоки и дивиденды ----
+{
   id:'div', glyph:'ДВ', name:'Дивидендная уязвимость',
-  tag:'Тест 2 · Денежный поток',
+  category:'cash', tag:'Денежные потоки и дивиденды',
   desc:'Устоит ли текущий дивиденд при падении выручки и, как следствие, свободного денежного потока.',
   inputs:[
     {key:'dividends', label:'Дивиденды всего', type:'number', def:20, step:0.5, currency:'bn'},
@@ -325,8 +434,70 @@ const MODULES = [
   }
 },
 {
+  id:'workcap', glyph:'ОК', name:'Стресс оборотного капитала',
+  category:'cash', tag:'Денежные потоки и дивиденды',
+  desc:'Сколько денег «заморозится» в дебиторке и запасах, если платёжная дисциплина в отрасли ухудшится.',
+  inputs:[
+    {key:'revenue', label:'Выручка', type:'number', def:150, step:5, currency:'bn'},
+    {key:'receivablesDays', label:'Рост дебиторской задолженности', type:'range', min:0, max:60, def:20, unit:' дн.'},
+    {key:'inventoryDays', label:'Рост запасов', type:'range', min:0, max:60, def:15, unit:' дн.'},
+    {key:'payablesDays', label:'Сокращение кредиторской задолженности', type:'range', min:0, max:40, def:10, unit:' дн.'},
+  ],
+  compute(v){
+    const totalDays = v.receivablesDays + v.inventoryDays + v.payablesDays;
+    const cashLocked = v.revenue/365*totalDays;
+    const shareOfRevenue = cashLocked/v.revenue*100;
+    const score = scaleScore(shareOfRevenue, 2, 16);
+    return {score, lines:[
+      ['Заморожено в оборотном капитале', fmt(cashLocked,1)+' '+currencySuffix('bn')],
+      ['Доля от выручки', fmt(shareOfRevenue,1)+'%'],
+    ]};
+  }
+},
+
+// ---- Операционный стресс ----
+{
+  id:'margincost', glyph:'МЖ', name:'Стресс маржинальности',
+  category:'ops', tag:'Операционный стресс',
+  desc:'Что будет с маржой, если затраты (сырьё, зарплаты, логистика) вырастут быстрее, чем компания сможет переложить это в цену.',
+  inputs:[
+    {key:'margin', label:'Текущая маржа EBITDA', type:'range', min:2, max:60, def:22, unit:'%'},
+    {key:'costGrowth', label:'Средневзвешенный рост затрат', type:'range', min:0, max:50, def:18, unit:'%'},
+    {key:'passThrough', label:'Доля роста затрат, перекладываемая в цену', type:'range', min:0, max:100, def:40, unit:'%'},
+  ],
+  compute(v){
+    const uncovered = v.costGrowth*(1-v.passThrough/100);
+    const marginDrop = uncovered*(100-v.margin)/100;
+    const newMargin = v.margin - marginDrop;
+    const score = scaleScore(marginDrop, 1, 16);
+    return {score, lines:[
+      ['Новая маржа EBITDA', fmt(newMargin,1)+'%'],
+      ['Падение маржи', fmt(marginDrop,1)+' п.п.'],
+    ]};
+  }
+},
+{
+  id:'clientconc', glyph:'КЛ', name:'Потеря крупнейшего клиента',
+  category:'ops', tag:'Операционный стресс',
+  desc:'Насколько сильно ударит по прибыли уход одного крупного клиента с учётом постоянных расходов, которые никуда не денутся.',
+  inputs:[
+    {key:'clientShare', label:'Доля выручки от клиента', type:'range', min:2, max:50, def:15, unit:'%'},
+    {key:'fixedCostShare', label:'Доля постоянных расходов в структуре затрат', type:'range', min:10, max:90, def:50, unit:'%'},
+  ],
+  compute(v){
+    const profitImpact = v.clientShare*(1+v.fixedCostShare/100);
+    const score = scaleScore(profitImpact, 4, 55);
+    return {score, lines:[
+      ['Потеря выручки', fmt(v.clientShare,0)+'%'],
+      ['Оценка влияния на прибыль', fmt(profitImpact,0)+'%'],
+    ]};
+  }
+},
+
+// ---- Валюта и сырьё ----
+{
   id:'fx', glyph:'ВЛ', name:'Валютный шок',
-  tag:'Тест 3 · Курс',
+  category:'fxcomm', tag:'Валюта и сырьё',
   desc:'Кто выигрывает, а кто теряет от девальвации — зависит от баланса валютной выручки и валютного долга.',
   inputs:[
     {key:'revFx', label:'Доля валютной выручки', type:'range', min:0, max:100, def:60, unit:'%'},
@@ -334,7 +505,7 @@ const MODULES = [
     {key:'deval', label:'Девальвация рубля', type:'range', min:0, max:50, def:20, unit:'%'},
   ],
   compute(v){
-    const netExposure = (v.revFx - v.debtFx)/100 * v.deval; // % points, positive = выгода
+    const netExposure = (v.revFx - v.debtFx)/100 * v.deval;
     const score = netExposure>=0 ? scaleScore(-netExposure,0,10) : scaleScore(-netExposure,0,30);
     return {score, lines:[
       ['Чистая валютная экспозиция', (netExposure>=0?'+':'')+fmt(netExposure,1)+' п.п. к марже'],
@@ -344,7 +515,7 @@ const MODULES = [
 },
 {
   id:'commodity', glyph:'СЫ', name:'Сырьевой шок',
-  tag:'Тест 4 · Цена сырья',
+  category:'fxcomm', tag:'Валюта и сырьё',
   desc:'Насколько выручка зависит от цены на сырьё и что будет при её обвале.',
   inputs:[
     {key:'revShare', label:'Доля выручки, зависящая от сырья', type:'range', min:0, max:100, def:70, unit:'%'},
@@ -359,10 +530,33 @@ const MODULES = [
     ]};
   }
 },
+
+// ---- Рыночная оценка ----
+{
+  id:'mult', glyph:'МН', name:'Мультипликаторный сценарий',
+  category:'valuation', tag:'Рыночная оценка',
+  desc:'Что будет с ценой, если рынок сожмёт мультипликатор до минимума, наблюдавшегося в секторе.',
+  inputs:[
+    {key:'price', label:'Текущая цена', type:'number', def:250, step:5, currency:'unit'},
+    {key:'curMult', label:'Текущий мультипликатор (P/E, EV/EBITDA или P/B)', type:'number', def:8, step:0.1},
+    {key:'minMult', label:'Исторический минимум мультипликатора по сектору', type:'number', def:4, step:0.1},
+  ],
+  compute(v){
+    const impliedPrice = v.price*(v.minMult/v.curMult);
+    const downside = (impliedPrice-v.price)/v.price*100;
+    const score = scaleScore(-downside,0,50);
+    return {score, lines:[
+      ['Цена при сжатии мультипликатора', fmt(impliedPrice,0)+' '+currencySuffix('unit')],
+      ['Потенциальный даунсайд', fmt(downside,1)+'%'],
+    ]};
+  }
+},
+
+// ---- Ликвидность ----
 {
   id:'liq', glyph:'ЛК', name:'Ликвидность бумаги',
-  tag:'Тест 5 · Возможность выйти',
-  desc:'Сколько потребуется дней, чтобы закрыть позицию, не продавливая цену рынком.',
+  category:'liquidity', tag:'Ликвидность',
+  desc:'Сколько потребуется дней, чтобы закрыть позицию, не продавливая цену рынком. Тот же расчёт подходит и для сценария «крупный фонд выходит из 5–10% free float» — просто впишите этот объём как размер позиции.',
   inputs:[
     {key:'position', label:'Размер позиции', type:'number', def:5, step:0.5, currency:'mn'},
     {key:'volume', label:'Средний дневной оборот', type:'number', def:80, step:5, currency:'mn'},
@@ -376,46 +570,11 @@ const MODULES = [
     ]};
   }
 },
-{
-  id:'reg', glyph:'РГ', name:'Регуляторный / санкционный риск',
-  tag:'Тест 6 · Инфраструктура',
-  desc:'Качественная оценка риска блокировки, делистинга, ограничения выплат или иного вмешательства регулятора — применимо к любому рынку.',
-  inputs:[
-    {key:'adr', label:'Расчёты идут через иностранную инфраструктуру (депозитарные расписки, зарубежный брокер/кастодиан)', type:'checkbox', def:false, weight:20},
-    {key:'jurisdiction', label:'Юрисдикция эмитента или холдинговой структуры повышенного риска', type:'checkbox', def:false, weight:30},
-    {key:'sectorHistory', label:'В секторе уже были прецеденты блокировок, делистинга или ограничения выплат', type:'checkbox', def:true, weight:25},
-    {key:'exportDep', label:'Значимая зависимость бизнеса от недружественных/санкционных юрисдикций (сбыт, поставки, лицензии)', type:'checkbox', def:false, weight:25},
-  ],
-  compute(v, cfg){
-    let score = 0;
-    cfg.inputs.forEach(i=>{ if(v[i.key]) score += i.weight; });
-    return {score, lines:[
-      ['Сработавшие факторы', cfg.inputs.filter(i=>v[i.key]).length + ' из ' + cfg.inputs.length],
-    ]};
-  }
-},
-{
-  id:'mult', glyph:'МН', name:'Мультипликаторный сценарий',
-  tag:'Тест 7 · Переоценка',
-  desc:'Что будет с ценой, если рынок сожмёт мультипликатор до минимума, наблюдавшегося в секторе.',
-  inputs:[
-    {key:'price', label:'Текущая цена', type:'number', def:250, step:5, currency:'unit'},
-    {key:'curMult', label:'Текущий мультипликатор (P/E или EV/EBITDA)', type:'number', def:8, step:0.1},
-    {key:'minMult', label:'Исторический минимум мультипликатора по сектору', type:'number', def:4, step:0.1},
-  ],
-  compute(v){
-    const impliedPrice = v.price*(v.minMult/v.curMult);
-    const downside = (impliedPrice-v.price)/v.price*100;
-    const score = scaleScore(-downside,0,50);
-    return {score, lines:[
-      ['Цена при сжатии мультипликатора', fmt(impliedPrice,0)+' '+currencySuffix('unit')],
-      ['Потенциальный даунсайд', fmt(downside,1)+'%'],
-    ]};
-  }
-},
+
+// ---- Макроэкономика ----
 {
   id:'recession', glyph:'РЦ', name:'Рецессионный сценарий',
-  tag:'Тест 8 · Цикл',
+  category:'macro', tag:'Макроэкономика',
   desc:'Как позиция переживёт спад выручки и прибыли на фазе экономического цикла.',
   inputs:[
     {key:'cyc', label:'Тип бизнеса', type:'select', def:'cyclical', options:[['cyclical','Цикличный'],['defensive','Нецикличный']]},
@@ -433,14 +592,130 @@ const MODULES = [
     ]};
   }
 },
+{
+  id:'inflation', glyph:'ИН', name:'Инфляционный стресс',
+  category:'macro', tag:'Макроэкономика',
+  desc:'Успевает ли компания перекладывать растущую инфляцию издержек в цену, или маржа постепенно съедается.',
+  inputs:[
+    {key:'inflation', label:'Инфляция издержек', type:'range', min:2, max:30, def:12, unit:'%'},
+    {key:'pricingPower', label:'Ценовая власть (доля инфляции, перекладываемая в цену)', type:'range', min:0, max:100, def:50, unit:'%'},
+  ],
+  compute(v){
+    const marginErosion = v.inflation*(1-v.pricingPower/100);
+    const score = scaleScore(marginErosion, 1, 16);
+    return {score, lines:[
+      ['Непокрытая инфляция', fmt(marginErosion,1)+' п.п. к марже'],
+      ['Ценовая власть', fmt(v.pricingPower,0)+'%'],
+    ]};
+  }
+},
+
+// ---- Корпоративное управление ----
+{
+  id:'capalloc', glyph:'КА', name:'Стресс аллокации капитала',
+  category:'gov', tag:'Корпоративное управление',
+  desc:'Качественная оценка риска, что менеджмент примет решения, разрушающие стоимость для миноритариев.',
+  inputs:[
+    {key:'maRisk', label:'Есть риск переплаты за M&A', type:'checkbox', def:false, weight:25},
+    {key:'capexOverrun', label:'История превышения CAPEX над первоначальным планом', type:'checkbox', def:false, weight:25},
+    {key:'dilutionHistory', label:'История допэмиссий, размывавших действующих акционеров', type:'checkbox', def:false, weight:25},
+    {key:'buybackRisk', label:'Buyback может быть приостановлен при ухудшении конъюнктуры', type:'checkbox', def:true, weight:25},
+  ],
+  compute(v, cfg){
+    let score = 0;
+    cfg.inputs.forEach(i=>{ if(v[i.key]) score += i.weight; });
+    return {score, lines:[
+      ['Сработавшие факторы', cfg.inputs.filter(i=>v[i.key]).length + ' из ' + cfg.inputs.length],
+    ]};
+  }
+},
+{
+  id:'dilution', glyph:'РМ', name:'Риск размытия доли',
+  category:'gov', tag:'Корпоративное управление',
+  desc:'Насколько вырастет число акций в обращении за счёт опционов, конвертируемых облигаций и SPO.',
+  inputs:[
+    {key:'shares', label:'Акций в обращении сейчас, млн', type:'number', def:1000, step:10},
+    {key:'options', label:'Потенциальные акции от опционов/конвертируемых, млн', type:'number', def:40, step:5},
+    {key:'spo', label:'Планируемый объём SPO, млн акций', type:'number', def:0, step:5},
+  ],
+  compute(v){
+    const newTotal = v.shares+v.options+v.spo;
+    const dilution = (newTotal-v.shares)/v.shares*100;
+    const score = scaleScore(dilution, 1, 25);
+    return {score, lines:[
+      ['Потенциальное размытие', fmt(dilution,1)+'%'],
+      ['Итоговое число акций', fmt(newTotal,0)+' млн'],
+    ]};
+  }
+},
+
+// ---- Геополитика и цепочки поставок ----
+{
+  id:'reg', glyph:'РГ', name:'Регуляторный / санкционный риск',
+  category:'geo', tag:'Геополитика',
+  desc:'Качественная оценка риска блокировки, делистинга, ограничения выплат или иного вмешательства регулятора — применимо к любому рынку.',
+  inputs:[
+    {key:'adr', label:'Расчёты идут через иностранную инфраструктуру (депозитарные расписки, зарубежный брокер/кастодиан)', type:'checkbox', def:false, weight:20},
+    {key:'jurisdiction', label:'Юрисдикция эмитента или холдинговой структуры повышенного риска', type:'checkbox', def:false, weight:30},
+    {key:'sectorHistory', label:'В секторе уже были прецеденты блокировок, делистинга или ограничения выплат', type:'checkbox', def:true, weight:25},
+    {key:'exportDep', label:'Значимая зависимость бизнеса от недружественных/санкционных юрисдикций (сбыт, поставки, лицензии)', type:'checkbox', def:false, weight:25},
+  ],
+  compute(v, cfg){
+    let score = 0;
+    cfg.inputs.forEach(i=>{ if(v[i.key]) score += i.weight; });
+    return {score, lines:[
+      ['Сработавшие факторы', cfg.inputs.filter(i=>v[i.key]).length + ' из ' + cfg.inputs.length],
+    ]};
+  }
+},
+{
+  id:'supply', glyph:'ЦП', name:'Стресс цепочек поставок',
+  category:'geo', tag:'Геополитика',
+  desc:'Качественная оценка зависимости от импортных компонентов, единственных поставщиков и уязвимой логистики.',
+  inputs:[
+    {key:'singleSource', label:'Критичный компонент/сырьё поступает от одного поставщика или региона', type:'checkbox', def:false, weight:30},
+    {key:'importDep', label:'Существенная зависимость от импорта', type:'checkbox', def:false, weight:25},
+    {key:'leadTimeHistory', label:'Были прецеденты срывов сроков поставки', type:'checkbox', def:false, weight:20},
+    {key:'logisticsCost', label:'Логистика — значимая часть себестоимости', type:'checkbox', def:false, weight:25},
+  ],
+  compute(v, cfg){
+    let score = 0;
+    cfg.inputs.forEach(i=>{ if(v[i.key]) score += i.weight; });
+    return {score, lines:[
+      ['Сработавшие факторы', cfg.inputs.filter(i=>v[i.key]).length + ' из ' + cfg.inputs.length],
+    ]};
+  }
+},
+];
+
+const CATEGORY_LABELS = {
+  fin:'Финансовая устойчивость',
+  cash:'Денежные потоки и дивиденды',
+  ops:'Операционный стресс',
+  fxcomm:'Валюта и сырьё',
+  valuation:'Рыночная оценка',
+  liquidity:'Ликвидность',
+  macro:'Макроэкономика',
+  gov:'Корпоративное управление',
+  geo:'Геополитика',
+};
+
+// Composite index buckets — weights sum to 100
+const BUCKETS = [
+  {name:'Финансовая устойчивость', weight:30, modules:['debt','refi','covenant']},
+  {name:'Денежные потоки и дивиденды', weight:20, modules:['div','workcap']},
+  {name:'Рыночные риски', weight:15, modules:['mult','liq','fx','commodity']},
+  {name:'Операционная устойчивость', weight:15, modules:['margincost','clientconc']},
+  {name:'Корпоративное управление', weight:10, modules:['capalloc','dilution']},
+  {name:'Внешние риски', weight:10, modules:['recession','inflation','reg','supply']},
 ];
 
 let state = {};
 MODULES.forEach(m=>{
-  state[m.id] = {};
+  state[m.id] = {__na:false};
   m.inputs.forEach(i=>{ state[m.id][i.key] = i.def; });
 });
-let activeId = MODULES[0].id;
+let activeId = 'summary';
 let currency = 'rub'; // 'rub' | 'usd'
 
 function currSymbol(){ return currency==='rub' ? '₽' : '$'; }
@@ -466,21 +741,30 @@ document.getElementById('themeToggle').addEventListener('click', (e)=>{
   document.body.classList.toggle('light', btn.dataset.theme==='light');
 });
 
-function renderRail(){
-  const rail = document.getElementById('rail');
-  rail.innerHTML = '';
-  MODULES.forEach((m,idx)=>{
-    const btn = document.createElement('button');
-    btn.className = m.id===activeId ? 'active' : '';
-    btn.innerHTML = `<span class="glyph">${m.glyph}</span><span class="label"><b>${m.name}</b><span>${m.tag}</span></span>`;
-    btn.onclick = ()=>{ activeId = m.id; renderRail(); renderPanel(); };
-    rail.appendChild(btn);
+document.getElementById('clearBtn').addEventListener('click', ()=>{
+  const ok = window.confirm('Очистить все введённые данные и переключатели «неприменимо»? Это действие нельзя отменить.');
+  if(!ok) return;
+  MODULES.forEach(m=>{
+    state[m.id] = {__na:false};
+    m.inputs.forEach(i=>{ state[m.id][i.key] = i.def; });
   });
-  const idx = MODULES.findIndex(m=>m.id===activeId)+1;
-  document.getElementById('counter').textContent = String(idx).padStart(2,'0')+' / '+String(MODULES.length).padStart(2,'0');
-}
+  activeId = 'summary';
+  renderAll();
+});
 
 function gaugeSVG(score, zoneColorVar){
+  if(zoneColorVar==='na'){
+    return `
+    <svg viewBox="0 0 220 130" width="100%">
+      <path d="M 20 110 A 90 90 0 0 1 84 25" fill="none" stroke="var(--border)" stroke-width="12" stroke-linecap="round"/>
+      <path d="M 84 25 A 90 90 0 0 1 136 25" fill="none" stroke="var(--border)" stroke-width="12" stroke-linecap="round"/>
+      <path d="M 136 25 A 90 90 0 0 1 200 110" fill="none" stroke="var(--border)" stroke-width="12" stroke-linecap="round"/>
+      <g transform="translate(110,110) rotate(0)">
+        <line x1="0" y1="0" x2="0" y2="-72" stroke="var(--text-3)" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="0" cy="0" r="6" fill="var(--text-3)"/>
+      </g>
+    </svg>`;
+  }
   const angle = -90 + (score/100)*180;
   const colorMap = {safe:'var(--safe)', caution:'var(--caution)', critical:'var(--critical)'};
   return `
@@ -548,7 +832,17 @@ function renderInputField(mod, field, onChange){
   return wrap;
 }
 
+function isNA(id){ return !!state[id].__na; }
+
 function fillResults(mod, refs){
+  if(isNA(mod.id)){
+    refs.gaugeWrap.innerHTML = gaugeSVG(0, 'na');
+    refs.scoreEl.innerHTML = `Н/П<span>не учитывается в сводном индексе</span>`;
+    refs.verdict.className = 'verdict na';
+    refs.verdict.textContent = 'Неприменимо';
+    refs.detail.innerHTML = `<div><span>Статус</span><b>Тест исключён вручную</b></div>`;
+    return;
+  }
   const result = mod.compute(state[mod.id], mod);
   const score = clamp(result.score,0,100);
   const zone = zoneOf(score);
@@ -563,6 +857,13 @@ function fillResults(mod, refs){
 // so several instances (desktop panel + every accordion card) can live at once.
 function buildModuleGrid(mod){
   const refs = {};
+  const outer = document.createElement('div');
+
+  const naBar = document.createElement('label');
+  naBar.className = 'na-toggle';
+  naBar.innerHTML = `<input type="checkbox" ${isNA(mod.id)?'checked':''}><span>Этот тест неприменим к данной позиции — исключить из сводного индекса</span>`;
+  outer.appendChild(naBar);
+
   const grid = document.createElement('div');
   grid.className = 'grid';
 
@@ -587,18 +888,142 @@ function buildModuleGrid(mod){
 
   grid.appendChild(inputsCol);
   grid.appendChild(resultCol);
+  grid.classList.toggle('grid-na', isNA(mod.id));
+  outer.appendChild(grid);
+
+  naBar.querySelector('input').onchange = (e)=>{
+    state[mod.id].__na = e.target.checked;
+    grid.classList.toggle('grid-na', e.target.checked);
+    fillResults(mod, refs);
+  };
 
   fillResults(mod, refs);
-  return grid;
+  return outer;
 }
 
 const METHOD_NOTE = `<b>Как читать:</b> зелёная зона — фактор не создаёт заметного риска при заданном шоке; жёлтая — уязвимость есть, стоит следить и закладывать в размер позиции; красная — шок способен существенно ухудшить положение эмитента или цену бумаги.`;
 
+function zoneClass(score){ return zoneOf(clamp(score,0,100)); }
+
+// Returns {score, applicableCount, totalCount} — score is null if every test in the bucket is marked N/A
+function computeBucketScore(bucket){
+  const applicable = bucket.modules.filter(id=>!isNA(id));
+  if(applicable.length===0) return {score:null, applicableCount:0, totalCount:bucket.modules.length};
+  const scores = applicable.map(id=>{
+    const mod = MODULES.find(m=>m.id===id);
+    return clamp(mod.compute(state[id], mod).score, 0, 100);
+  });
+  return {score: scores.reduce((a,b)=>a+b,0)/scores.length, applicableCount:applicable.length, totalCount:bucket.modules.length};
+}
+// Weight of any bucket with no applicable tests is dropped and the rest renormalized to still sum to 100%
+function computeComposite(){
+  let weightedSum = 0, weightTotal = 0;
+  BUCKETS.forEach(b=>{
+    const r = computeBucketScore(b);
+    if(r.score!==null){ weightedSum += r.score*b.weight; weightTotal += b.weight; }
+  });
+  return weightTotal>0 ? weightedSum/weightTotal : 0;
+}
+
+function buildSummaryContent(){
+  const wrap = document.createElement('div');
+
+  const composite = computeComposite();
+  const compositeZone = zoneClass(composite);
+  const excludedBuckets = BUCKETS.filter(b=>computeBucketScore(b).score===null);
+  const excludedTests = MODULES.filter(m=>isNA(m.id));
+
+  const top = document.createElement('div');
+  top.className = 'composite-wrap';
+
+  const gaugeCol = document.createElement('div');
+  gaugeCol.className = 'composite-gauge';
+  gaugeCol.innerHTML = gaugeSVG(composite, compositeZone);
+  const scoreEl = document.createElement('div');
+  scoreEl.className = 'gauge-score';
+  scoreEl.innerHTML = `${Math.round(composite)}<span>сводный индекс риска / 100</span>`;
+  gaugeCol.appendChild(scoreEl);
+  const verdict = document.createElement('div');
+  verdict.className = 'verdict '+compositeZone;
+  verdict.textContent = zoneLabel(compositeZone);
+  gaugeCol.appendChild(verdict);
+  if(excludedTests.length){
+    const note = document.createElement('div');
+    note.style.cssText = 'margin-top:10px;font-size:11.5px;color:var(--text-3);text-align:center;line-height:1.5;';
+    note.textContent = `Исключено тестов: ${excludedTests.length}. Веса пересчитаны на оставшиеся.`;
+    gaugeCol.appendChild(note);
+  }
+
+  const bucketsCol = document.createElement('div');
+  bucketsCol.className = 'composite-buckets';
+  const activeWeightTotal = BUCKETS.reduce((sum,b)=> sum + (computeBucketScore(b).score!==null ? b.weight : 0), 0);
+  BUCKETS.forEach(b=>{
+    const r = computeBucketScore(b);
+    const row = document.createElement('div');
+    row.className = 'bucket-row';
+    if(r.score===null){
+      row.style.opacity = '0.5';
+      row.innerHTML = `
+        <div class="bucket-top"><b>${b.name}</b><span>исключён — все тесты неприменимы</span></div>
+        <div class="bucket-bar"><div class="bucket-bar-fill" style="width:0%"></div></div>`;
+    } else {
+      const z = zoneClass(r.score);
+      const effectiveWeight = activeWeightTotal>0 ? (b.weight/activeWeightTotal*100) : b.weight;
+      const partialNote = r.applicableCount<r.totalCount ? ` · ${r.applicableCount}/${r.totalCount} тестов` : '';
+      row.innerHTML = `
+        <div class="bucket-top"><b>${b.name}</b><span>вес ${fmt(effectiveWeight,0)}% · ${Math.round(r.score)}/100${partialNote}</span></div>
+        <div class="bucket-bar"><div class="bucket-bar-fill" style="width:${r.score}%;background:var(--${z})"></div></div>`;
+    }
+    bucketsCol.appendChild(row);
+  });
+
+  top.appendChild(gaugeCol);
+  top.appendChild(bucketsCol);
+  wrap.appendChild(top);
+
+  const tableWrap = document.createElement('div');
+  const table = document.createElement('table');
+  table.className = 'test-table';
+  table.innerHTML = `<thead><tr><th>Тест</th><th>Категория</th><th style="text-align:right">Индекс</th></tr></thead>`;
+  const tbody = document.createElement('tbody');
+  MODULES.forEach(mod=>{
+    const tr = document.createElement('tr');
+    if(isNA(mod.id)){
+      tr.style.opacity = '0.5';
+      tr.innerHTML = `<td class="name"><span class="dot na"></span>${mod.name}</td><td>${CATEGORY_LABELS[mod.category]}</td><td class="score">н/п</td>`;
+    } else {
+      const s = clamp(mod.compute(state[mod.id], mod).score, 0, 100);
+      const z = zoneClass(s);
+      tr.innerHTML = `<td class="name"><span class="dot ${z}"></span>${mod.name}</td><td>${CATEGORY_LABELS[mod.category]}</td><td class="score">${Math.round(s)}</td>`;
+    }
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  tableWrap.appendChild(table);
+  wrap.appendChild(tableWrap);
+
+  const method = document.createElement('div');
+  method.className = 'method';
+  method.innerHTML = `<b>Как читать:</b> сводный индекс — средневзвешенная оценка по шести блокам. Тесты, отмеченные как «неприменимо» внутри каждой карточки, полностью исключаются из расчёта — среднее по блоку считается только по оставшимся тестам, а если весь блок отмечен неприменимым, его вес пропорционально распределяется между остальными блоками. Значения подтягиваются из введённых вами параметров — если тест ещё не открывали, используются значения по умолчанию.`;
+  wrap.appendChild(method);
+
+  return wrap;
+}
+
 function renderPanel(){
-  const mod = MODULES.find(m=>m.id===activeId);
   const panel = document.getElementById('panel');
   panel.innerHTML = '';
 
+  if(activeId==='summary'){
+    const head = document.createElement('div');
+    head.className = 'mod-head';
+    head.innerHTML = `<div class="tag">Сводка</div><h2>Итоговый индекс устойчивости</h2><p>Взвешенная оценка по всем 17 тестам, сгруппированным в шесть блоков риска.</p>`;
+    panel.appendChild(head);
+    panel.appendChild(buildSummaryContent());
+    return;
+  }
+
+  const mod = MODULES.find(m=>m.id===activeId);
   const head = document.createElement('div');
   head.className = 'mod-head';
   head.innerHTML = `<div class="tag">${mod.tag}</div><h2>${mod.name}</h2><p>${mod.desc}</p>`;
@@ -612,12 +1037,46 @@ function renderPanel(){
   panel.appendChild(method);
 }
 
-// Mobile: every module rendered as a collapsible card, so the list never has to sit
-// on top of the parameters — tapping a test opens its inputs directly beneath it.
+// Mobile: every module rendered as a collapsible card grouped under category headers,
+// plus a pinned summary card at the top — so the list never sits on top of the parameters.
 function renderAccordion(){
   const wrap = document.getElementById('accordion');
   wrap.innerHTML = '';
-  MODULES.forEach((mod, idx)=>{
+
+  // pinned summary card
+  const sumItem = document.createElement('div');
+  sumItem.className = 'acc-item summary-item';
+  const sumHeader = document.createElement('button');
+  sumHeader.className = 'acc-header';
+  sumHeader.innerHTML = `<span class="glyph">Σ</span>
+    <span class="label"><b>Итоговый индекс устойчивости</b><span>Сводка по всем тестам</span></span>
+    <span class="chevron">⌄</span>`;
+  const sumBody = document.createElement('div');
+  sumBody.className = 'acc-body';
+  sumHeader.onclick = ()=>{
+    const willOpen = !sumItem.classList.contains('open');
+    wrap.querySelectorAll('.acc-item.open').forEach(el=>el.classList.remove('open'));
+    if(willOpen){
+      sumItem.classList.add('open');
+      sumBody.innerHTML = '';
+      sumBody.appendChild(buildSummaryContent()); // rebuilt each open — reflects latest inputs
+      sumItem.scrollIntoView({behavior:'smooth', block:'start'});
+    }
+  };
+  sumItem.appendChild(sumHeader);
+  sumItem.appendChild(sumBody);
+  wrap.appendChild(sumItem);
+
+  let lastCategory = null;
+  MODULES.forEach((mod)=>{
+    if(mod.category!==lastCategory){
+      const section = document.createElement('div');
+      section.className = 'acc-section';
+      section.textContent = CATEGORY_LABELS[mod.category];
+      wrap.appendChild(section);
+      lastCategory = mod.category;
+    }
+
     const item = document.createElement('div');
     item.className = 'acc-item';
 
@@ -660,15 +1119,36 @@ function renderAccordion(){
 function renderRail(){
   const rail = document.getElementById('rail');
   rail.innerHTML = '';
-  MODULES.forEach((m,idx)=>{
+
+  const sumBtn = document.createElement('button');
+  sumBtn.className = 'summary-btn' + (activeId==='summary' ? ' active' : '');
+  sumBtn.innerHTML = `<span class="glyph">Σ</span><span class="label"><b>Итоговый индекс</b><span>Сводка</span></span>`;
+  sumBtn.onclick = ()=>{ activeId = 'summary'; renderRail(); renderPanel(); };
+  rail.appendChild(sumBtn);
+  rail.appendChild(document.createElement('hr')).className = 'rail-divider';
+
+  let lastCategory = null;
+  MODULES.forEach((m)=>{
+    if(m.category!==lastCategory){
+      const section = document.createElement('div');
+      section.className = 'rail-section';
+      section.textContent = CATEGORY_LABELS[m.category];
+      rail.appendChild(section);
+      lastCategory = m.category;
+    }
     const btn = document.createElement('button');
     btn.className = m.id===activeId ? 'active' : '';
     btn.innerHTML = `<span class="glyph">${m.glyph}</span><span class="label"><b>${m.name}</b><span>${m.tag}</span></span>`;
     btn.onclick = ()=>{ activeId = m.id; renderRail(); renderPanel(); };
     rail.appendChild(btn);
   });
-  const idx = MODULES.findIndex(m=>m.id===activeId)+1;
-  document.getElementById('counter').textContent = String(idx).padStart(2,'0')+' / '+String(MODULES.length).padStart(2,'0');
+
+  if(activeId==='summary'){
+    document.getElementById('counter').textContent = 'Обзор';
+  } else {
+    const idx = MODULES.findIndex(m=>m.id===activeId)+1;
+    document.getElementById('counter').textContent = String(idx).padStart(2,'0')+' / '+String(MODULES.length).padStart(2,'0');
+  }
 }
 
 function renderAll(){
