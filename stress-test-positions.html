@@ -759,7 +759,12 @@ document.getElementById('clearBtn').addEventListener('click', (e)=>{
   btn.textContent = 'Очистить данные';
   MODULES.forEach(m=>{
     state[m.id] = {__na:false};
-    m.inputs.forEach(i=>{ state[m.id][i.key] = i.def; });
+    m.inputs.forEach(i=>{
+      if(i.type==='number') state[m.id][i.key] = NaN;       // по-настоящему пусто
+      else if(i.type==='range') state[m.id][i.key] = i.min;  // ползунок не может быть "пустым" — минимум как нейтральная точка
+      else if(i.type==='checkbox') state[m.id][i.key] = false;
+      else state[m.id][i.key] = i.def;                       // select — категориальный выбор, не "данные"
+    });
   });
   activeId = 'summary';
   renderAll();
@@ -814,12 +819,18 @@ function renderInputField(mod, field, onChange){
       onChange();
     };
   } else if(field.type==='number'){
+    const displayVal = (typeof v==='number' && isNaN(v)) ? '' : v;
     wrap.innerHTML = `<label>${fieldLabel(field)}</label>
-      <input type="text" inputmode="decimal" autocomplete="off" value="${v}">`;
+      <input type="text" inputmode="decimal" autocomplete="off" value="${displayVal}" placeholder="введите значение">`;
     wrap.querySelector('input').oninput = (e)=>{
       // accept partial input (e.g. "-", "1.", "") without touching the field's own value —
       // only commit to state (and recompute) once it parses as a real number
       const raw = e.target.value.replace(',', '.');
+      if(raw.trim()===''){
+        state[mod.id][field.key] = NaN;
+        onChange();
+        return;
+      }
       const val = parseFloat(raw);
       if(!isNaN(val)){
         state[mod.id][field.key] = val;
@@ -847,6 +858,10 @@ function renderInputField(mod, field, onChange){
 
 function isNA(id){ return !!state[id].__na; }
 
+function hasEmptyFields(mod){
+  return mod.inputs.some(f => f.type==='number' && isNaN(state[mod.id][f.key]));
+}
+
 function fillResults(mod, refs){
   if(isNA(mod.id)){
     refs.gaugeWrap.innerHTML = gaugeSVG(0, 'na');
@@ -854,6 +869,14 @@ function fillResults(mod, refs){
     refs.verdict.className = 'verdict na';
     refs.verdict.textContent = 'Неприменимо';
     refs.detail.innerHTML = `<div><span>Статус</span><b>Тест исключён вручную</b></div>`;
+    return;
+  }
+  if(hasEmptyFields(mod)){
+    refs.gaugeWrap.innerHTML = gaugeSVG(0, 'na');
+    refs.scoreEl.innerHTML = `—<span>заполните поля</span>`;
+    refs.verdict.className = 'verdict na';
+    refs.verdict.textContent = 'Нет данных';
+    refs.detail.innerHTML = `<div><span>Статус</span><b>Не все поля заполнены</b></div>`;
     return;
   }
   const result = mod.compute(state[mod.id], mod);
@@ -920,7 +943,7 @@ function zoneClass(score){ return zoneOf(clamp(score,0,100)); }
 
 // Returns {score, applicableCount, totalCount} — score is null if every test in the bucket is marked N/A
 function computeBucketScore(bucket){
-  const applicable = bucket.modules.filter(id=>!isNA(id));
+  const applicable = bucket.modules.filter(id=>!isNA(id) && !hasEmptyFields(MODULES.find(m=>m.id===id)));
   if(applicable.length===0) return {score:null, applicableCount:0, totalCount:bucket.modules.length};
   const scores = applicable.map(id=>{
     const mod = MODULES.find(m=>m.id===id);
@@ -1004,6 +1027,9 @@ function buildSummaryContent(){
     if(isNA(mod.id)){
       tr.style.opacity = '0.5';
       tr.innerHTML = `<td class="name"><span class="dot na"></span>${mod.name}</td><td>${CATEGORY_LABELS[mod.category]}</td><td class="score">н/п</td>`;
+    } else if(hasEmptyFields(mod)){
+      tr.style.opacity = '0.5';
+      tr.innerHTML = `<td class="name"><span class="dot na"></span>${mod.name}</td><td>${CATEGORY_LABELS[mod.category]}</td><td class="score">не заполнено</td>`;
     } else {
       const s = clamp(mod.compute(state[mod.id], mod).score, 0, 100);
       const z = zoneClass(s);
