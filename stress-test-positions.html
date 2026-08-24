@@ -286,27 +286,34 @@
   }
 </style>
 
+<style>
+  .print-report{ display:none; }
+</style>
 <style media="print">
   @page{ margin: 14mm 12mm; }
   body{
     --bg:#FFFFFF; --panel:#FFFFFF; --panel-2:#F3F4F6; --border:#D7DADF;
     --text:#0F1318; --text-2:#3C4450; --text-3:#6B7280;
     --safe:#1F7A44; --caution:#966410; --critical:#A8362D;
+    --accent:#2A4E9C; --accent-dim:#E6ECF8;
   }
-  header.top .head-controls, .rail, .layout{ display: none !important; }
-  .print-only{ display:block !important; margin-bottom: 16px; }
-  .print-only h2{ margin: 0 0 4px; font-size: 16px; }
-  .print-only #printDate{ font-family:'IBM Plex Mono',monospace; font-size: 11px; color: var(--text-3); }
-  #accordion{ display: block !important; }
-  .acc-item{ break-inside: avoid; border-color: var(--border); }
-  .acc-header{ cursor: default; }
-  .acc-header .chevron{ display: none; }
-  .acc-body{ display: block !important; }
-  .na-toggle{ pointer-events: none; }
-  .gauge-wrap svg{ max-width: 160px; }
+  header.top, .rail, .layout, #accordion, footer.disclaimer{ display: none !important; }
+  .print-report{ display: block !important; }
+  .print-report .p-date{ font-family:'IBM Plex Mono',monospace; font-size: 11px; color: var(--text-3); margin-bottom: 4px; }
+  .print-report h1{ font-size: 18px; margin: 0 0 4px; }
+  .print-report h2{ font-size: 15px; margin: 18px 0 8px; border-bottom: 1px solid var(--border); padding-bottom: 4px; }
+  .print-report .p-test{ break-inside: avoid; margin-bottom: 14px; border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; }
+  .print-report .p-test h3{ font-size: 13px; margin: 0 0 2px; }
+  .print-report .p-cat{ font-family:'IBM Plex Mono',monospace; font-size: 10px; color: var(--text-3); text-transform: uppercase; margin-bottom: 6px; }
+  .print-report table.p-fields{ width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 8px; }
+  .print-report table.p-fields td{ padding: 3px 6px; border: 1px solid var(--border); }
+  .print-report table.p-fields td:first-child{ color: var(--text-2); width: 60%; }
+  .print-report .p-result{ font-size: 11.5px; line-height: 1.6; background: var(--panel-2); border-radius: 4px; padding: 8px 10px; }
 </style>
 </head>
 <body>
+
+
 <div class="app">
   <header class="top">
     <div>
@@ -331,10 +338,7 @@
     </div>
   </header>
 
-  <div class="print-only" id="printHeader">
-    <h2>VF Stock · Отчёт стресс-тестирования позиции</h2>
-    <div id="printDate"></div>
-  </div>
+  <div id="printReport" class="print-report"></div>
 
   <div class="layout">
     <nav class="rail" id="rail"></nav>
@@ -1235,36 +1239,109 @@ function renderAll(){
 
 renderAll();
 
-function ensureFullReportBuilt(){
-  // Summary — always rebuild so the printed report reflects the latest inputs
-  const sumBody = document.getElementById('acc-body-summary');
-  if(sumBody){
-    sumBody.innerHTML = '';
-    sumBody.appendChild(buildSummaryContent());
+function fieldValueText(mod, field){
+  const v = state[mod.id][field.key];
+  if(field.type==='checkbox') return v ? 'Да' : 'Нет';
+  if(field.type==='select'){
+    const opt = field.options.find(o=>o[0]===v);
+    return opt ? opt[1] : String(v);
   }
-  MODULES.forEach(mod=>{
-    const body = document.getElementById('acc-body-'+mod.id);
-    if(!body) return;
-    body.innerHTML = '';
-    const desc = document.createElement('p');
-    desc.style.cssText = 'color:var(--text-2);font-size:13px;line-height:1.55;margin:12px 0 4px;';
-    desc.textContent = mod.desc;
-    body.appendChild(desc);
-    body.appendChild(buildModuleGrid(mod));
-    const method = document.createElement('div');
-    method.className = 'method';
-    method.innerHTML = METHOD_NOTE;
-    body.appendChild(method);
-    body.dataset.built = '1';
-  });
+  if(field.type==='number'){
+    if(typeof v==='number' && isNaN(v)) return '— не заполнено —';
+    return fmt(v, field.step && field.step<1 ? 1:0) + (field.currency ? ' '+currencySuffix(field.currency) : '');
+  }
+  return fmt(v, field.step && field.step<1 ? 1:0) + (field.unit||''); // range
 }
 
-document.getElementById('printBtn').addEventListener('click', ()=>{
-  ensureFullReportBuilt();
+function buildPrintTestSection(mod){
+  const wrap = document.createElement('div');
+  wrap.className = 'p-test';
+
+  const cat = document.createElement('div');
+  cat.className = 'p-cat';
+  cat.textContent = CATEGORY_LABELS[mod.category];
+  wrap.appendChild(cat);
+
+  const h = document.createElement('h3');
+  h.textContent = mod.name;
+  wrap.appendChild(h);
+
+  const table = document.createElement('table');
+  table.className = 'p-fields';
+  mod.inputs.forEach(f=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${f.label}</td><td><b>${fieldValueText(mod, f)}</b></td>`;
+    table.appendChild(tr);
+  });
+  wrap.appendChild(table);
+
+  const resultBox = document.createElement('div');
+  resultBox.className = 'p-result';
+  if(isNA(mod.id)){
+    resultBox.innerHTML = `<b>Статус:</b> тест помечен как неприменимый к этой позиции`;
+  } else if(hasEmptyFields(mod)){
+    resultBox.innerHTML = `<b>Статус:</b> не все поля заполнены — результат не рассчитан`;
+  } else {
+    const result = mod.compute(state[mod.id], mod);
+    const score = clamp(result.score,0,100);
+    const zone = zoneOf(score);
+    resultBox.innerHTML = `<b>Индекс риска:</b> ${Math.round(score)} / 100 — ${zoneLabel(zone)}<br>` +
+      result.lines.map(l=>`${l[0]}: <b>${l[1]}</b>`).join('<br>');
+  }
+  wrap.appendChild(resultBox);
+  return wrap;
+}
+
+function buildPrintReport(){
+  const container = document.getElementById('printReport');
+  container.innerHTML = '';
+
   const now = new Date();
-  document.getElementById('printDate').textContent =
-    'Сформировано: ' + now.toLocaleDateString('ru-RU') + ' ' + now.toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
-  window.print();
+  const dateEl = document.createElement('div');
+  dateEl.className = 'p-date';
+  dateEl.textContent = 'Сформировано: ' + now.toLocaleDateString('ru-RU') + ' ' + now.toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
+  container.appendChild(dateEl);
+
+  const title = document.createElement('h1');
+  title.textContent = 'VF Stock · Отчёт стресс-тестирования позиции';
+  container.appendChild(title);
+
+  const sumHeading = document.createElement('h2');
+  sumHeading.textContent = 'Итоговый индекс устойчивости';
+  container.appendChild(sumHeading);
+  container.appendChild(buildSummaryContent());
+
+  const testsHeading = document.createElement('h2');
+  testsHeading.textContent = 'Результаты по каждому тесту';
+  container.appendChild(testsHeading);
+  MODULES.forEach(mod=> container.appendChild(buildPrintTestSection(mod)) );
+}
+
+document.getElementById('printBtn').addEventListener('click', (e)=>{
+  const btn = e.currentTarget;
+  const originalLabel = btn.textContent;
+  try{
+    btn.textContent = 'Готовим отчёт…';
+    btn.disabled = true;
+    buildPrintReport();
+  } catch(err){
+    console.error('Ошибка при подготовке отчёта:', err);
+    btn.textContent = originalLabel;
+    btn.disabled = false;
+    alert('Не удалось подготовить отчёт: ' + err.message);
+    return;
+  }
+
+  setTimeout(()=>{
+    try{
+      window.print();
+    } catch(err){
+      console.error('Ошибка при вызове печати:', err);
+      alert('Браузер не разрешил открыть печать. Попробуйте открыть файл напрямую по ссылке, не во встроенном просмотре.');
+    }
+    btn.textContent = originalLabel;
+    btn.disabled = false;
+  }, 200);
 });
 </script>
 </body>
